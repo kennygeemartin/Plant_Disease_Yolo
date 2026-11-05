@@ -198,6 +198,22 @@ def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         writer.writerows(rows)
 
 
+def _read_csv(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as file:
+        rows = []
+        for row in csv.DictReader(file):
+            parsed: dict[str, Any] = {}
+            for key, value in row.items():
+                try:
+                    parsed[key] = float(value)
+                except (TypeError, ValueError):
+                    parsed[key] = value
+            rows.append(parsed)
+        return rows
+
+
 def _paired_tests(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     tests = []
     for condition in ("clear", "hazy"):
@@ -354,11 +370,28 @@ def _write_report(
     (RESULTS / "EXPERIMENT_REPORT.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def run(epochs: int, imgsz: int, batch: int, seeds: list[int], resume: bool) -> None:
+def run(
+    epochs: int,
+    imgsz: int,
+    batch: int,
+    seeds: list[int],
+    methods: list[str],
+    resume: bool,
+) -> None:
     if not (DATA / "manifest.json").exists():
         raise FileNotFoundError("Run prepare_proxy_data.py before the ablation.")
     RESULTS.mkdir(parents=True, exist_ok=True)
     class_names = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))["classes"]
+    previous_config_path = RESULTS / "experiment_config.json"
+    previous_config = (
+        json.loads(previous_config_path.read_text(encoding="utf-8"))
+        if resume and previous_config_path.exists()
+        else {}
+    )
+    experiment_seeds = sorted(set(previous_config.get("seeds", [])) | set(seeds))
+    experiment_methods = sorted(
+        set(previous_config.get("methods", METHODS)) | set(methods)
+    )
     config = {
         "study_type": "public-data proxy; not original-study reproduction",
         "model": MODEL,
@@ -372,7 +405,9 @@ def run(epochs: int, imgsz: int, batch: int, seeds: list[int], resume: bool) -> 
         "epochs": epochs,
         "imgsz": imgsz,
         "batch": batch,
-        "seeds": seeds,
+        "seeds": experiment_seeds,
+        "methods": experiment_methods,
+        "current_run_methods": methods,
         "training_parameters": TRAINING_PARAMETERS,
         "loss": "Ultralytics YOLOv10 default detection loss; no custom loss supplied",
         "loss_weights": {"box": 7.5, "cls": 0.5, "dfl": 1.5},
@@ -387,58 +422,72 @@ def run(epochs: int, imgsz: int, batch: int, seeds: list[int], resume: bool) -> 
     (RESULTS / "experiment_config.json").write_text(
         json.dumps(config, indent=2), encoding="utf-8"
     )
-    summaries = []
-    per_class = []
-    for method in METHODS:
+    summaries = (
+        _read_csv(RESULTS / "run_metrics.csv") if resume else []
+    )
+    per_class = (
+        _read_csv(RESULTS / "per_class_metrics.csv") if resume else []
+    )
+    for method in methods:
         for seed in seeds:
             run_name = f"{method}_seed{seed}"
             weight_path = RESULTS / run_name / "weights" / "best.pt"
-            if resume and weight_path.exists():
+            run_dir = RESULTS / run_name
+            last_weight_path = run_dir / "weights" / "last.pt"
+            epoch_log = run_dir / "results.csv"
+            completed_epochs = (
+                len(_read_csv(epoch_log)) if epoch_log.exists() else 0
+            )
+            if resume and completed_epochs >= epochs and weight_path.exists():
                 model = YOLO(str(weight_path))
             else:
-                random.seed(seed)
-                np.random.seed(seed)
-                torch.manual_seed(seed)
-                model = YOLO(MODEL)
-                model.train(
-                    data=str(DATA / "processed" / method / "data_clear_all.yaml"),
-                    project=str(RESULTS),
-                    name=run_name,
-                    exist_ok=True,
-                    device="cpu",
-                    workers=0,
-                    epochs=epochs,
-                    imgsz=imgsz,
-                    batch=batch,
-                    seed=seed,
-                    deterministic=True,
-                    pretrained=False,
-                    optimizer="AdamW",
-                    lr0=0.001,
-                    lrf=0.01,
-                    weight_decay=0.0005,
-                    warmup_epochs=0,
-                    patience=0,
-                    close_mosaic=0,
-                    mosaic=0,
-                    mixup=0,
-                    copy_paste=0,
-                    degrees=0,
-                    translate=0,
-                    scale=0,
-                    shear=0,
-                    perspective=0,
-                    fliplr=0,
-                    flipud=0,
-                    hsv_h=0,
-                    hsv_s=0,
-                    hsv_v=0,
-                    amp=False,
-                    plots=False,
-                    save=True,
-                    val=True,
-                    verbose=False,
-                )
+                if resume and last_weight_path.exists():
+                    model = YOLO(str(last_weight_path))
+                    model.train(resume=True)
+                else:
+                    random.seed(seed)
+                    np.random.seed(seed)
+                    torch.manual_seed(seed)
+                    model = YOLO(MODEL)
+                    model.train(
+                        data=str(DATA / "processed" / method / "data_clear_all.yaml"),
+                        project=str(RESULTS),
+                        name=run_name,
+                        exist_ok=True,
+                        device="cpu",
+                        workers=0,
+                        epochs=epochs,
+                        imgsz=imgsz,
+                        batch=batch,
+                        seed=seed,
+                        deterministic=True,
+                        pretrained=False,
+                        optimizer="AdamW",
+                        lr0=0.001,
+                        lrf=0.01,
+                        weight_decay=0.0005,
+                        warmup_epochs=0,
+                        patience=0,
+                        close_mosaic=0,
+                        mosaic=0,
+                        mixup=0,
+                        copy_paste=0,
+                        degrees=0,
+                        translate=0,
+                        scale=0,
+                        shear=0,
+                        perspective=0,
+                        fliplr=0,
+                        flipud=0,
+                        hsv_h=0,
+                        hsv_s=0,
+                        hsv_v=0,
+                        amp=False,
+                        plots=False,
+                        save=True,
+                        val=True,
+                        verbose=False,
+                    )
                 if not weight_path.exists():
                     raise FileNotFoundError(
                         f"Training did not produce the expected checkpoint: {weight_path}"
@@ -460,23 +509,52 @@ def run(epochs: int, imgsz: int, batch: int, seeds: list[int], resume: bool) -> 
                     per_class.extend(classes)
                     _write_csv(RESULTS / "run_metrics.csv", summaries)
                     _write_csv(RESULTS / "per_class_metrics.csv", per_class)
+    if resume:
+        summary_keys = ("method", "seed", "test_condition", "test_source")
+        summaries_by_key = {
+            tuple(row[key] for key in summary_keys): row for row in summaries
+        }
+        summaries = list(summaries_by_key.values())
+        class_keys = (
+            "method",
+            "seed",
+            "test_condition",
+            "test_source",
+            "class_id",
+            "class",
+        )
+        classes_by_key = {
+            tuple(row[key] for key in class_keys): row for row in per_class
+        }
+        per_class = list(classes_by_key.values())
     tests = _paired_tests(summaries)
     _write_report(summaries, per_class, tests, config)
-    print(f"Completed {len(seeds) * len(METHODS)} training runs.")
+    print(f"Completed requested runs for {len(methods)} preprocessing methods.")
     print(f"Results: {RESULTS / 'EXPERIMENT_REPORT.md'}")
 
 
 def main() -> None:
+    global RESULTS
     parser = argparse.ArgumentParser()
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--imgsz", type=int, default=320)
     parser.add_argument("--batch", type=int, default=4)
     parser.add_argument("--seeds", type=int, nargs="+", default=[11, 22, 33])
+    parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=RESULTS,
+        help="Directory for checkpoints and reports (default: results).",
+    )
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
-    if args.epochs < 1 or args.imgsz < 64 or args.batch < 1 or len(args.seeds) < 3:
-        parser.error("Use positive training settings and at least three independent seeds.")
-    run(args.epochs, args.imgsz, args.batch, args.seeds, args.resume)
+    if args.epochs < 1 or args.imgsz < 64 or args.batch < 1:
+        parser.error("Use positive training settings.")
+    if len(args.seeds) < 3 and not args.resume:
+        parser.error("Use at least three independent seeds for a new experiment.")
+    RESULTS = args.results_dir if args.results_dir.is_absolute() else ROOT / args.results_dir
+    run(args.epochs, args.imgsz, args.batch, args.seeds, args.methods, args.resume)
 
 
 if __name__ == "__main__":

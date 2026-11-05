@@ -31,4 +31,10 @@ python run_ablation.py --epochs 5 --imgsz 320 --batch 4 --seeds 11 22 33
 
 Outputs are written under `data/` and `results/`. The sample limit and short training schedule are deliberately explicit; the 20-image cap is per source and class. Change them only for a separately identified run and preserve the generated configuration and logs.
 
+To run a separate 10-epoch experiment without overwriting existing outputs, use `python run_ablation.py --epochs 10 --imgsz 320 --batch 4 --seeds 11 22 33 --results-dir results_10epoch`. This initializes each model from scratch; it does not resume a completed run. To generate reviewer-response drafts from those outputs, run `python build_reviewer_response.py --results-dir results_10epoch`.
+
+To continue selected interrupted methods/seeds in the same results directory and preserve earlier metrics, pass `--resume --methods <method> --seeds <seed ...>`. Interrupted `last.pt` checkpoints resume training; completed runs are reevaluated from `best.pt`.
+
 The generated [experiment report](./results/EXPERIMENT_REPORT.md) includes run-level and per-class metrics, source-specific test results, confusion matrices, confidence intervals, and paired tests. The response drafts can be regenerated with `python build_reviewer_response.py`.
+
+The later 10-epoch partial comparison is documented in [`results_10epoch/TEN_EPOCH_COMPARISON_REPORT.md`](./results_10epoch/TEN_EPOCH_COMPARISON_REPORT.md), with the manuscript's cited-model figures summarized separately in [`results_10epoch/MANUSCRIPT_MODEL_COMPARISON.md`](./results_10epoch/MANUSCRIPT_MODEL_COMPARISON.md). The published figures are contextual only; their datasets and evaluation protocols differ from this proxy.

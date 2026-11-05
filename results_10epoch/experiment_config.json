@@ -1,0 +1,68 @@
+{
+  "study_type": "public-data proxy; not original-study reproduction",
+  "model": "yolov10n.yaml",
+  "ultralytics_version": "8.3.40",
+  "torch_version": "2.15.0+cpu",
+  "python_version": "3.12.14 (main, Sep  1 2026, 14:17:39) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.22631-SP0",
+  "processor": "Intel64 Family 6 Model 142 Stepping 12, GenuineIntel",
+  "logical_cpu_count": 8,
+  "device": "cpu",
+  "epochs": 10,
+  "imgsz": 320,
+  "batch": 4,
+  "seeds": [
+    11,
+    22,
+    33
+  ],
+  "methods": [
+    "baseline",
+    "combined",
+    "dehaze",
+    "equalize"
+  ],
+  "current_run_methods": [
+    "equalize"
+  ],
+  "training_parameters": {
+    "optimizer": "AdamW",
+    "lr0": 0.001,
+    "lrf": 0.01,
+    "weight_decay": 0.0005,
+    "warmup_epochs": 0,
+    "patience": 0,
+    "close_mosaic": 0,
+    "mosaic": 0,
+    "mixup": 0,
+    "copy_paste": 0,
+    "degrees": 0,
+    "translate": 0,
+    "scale": 0,
+    "shear": 0,
+    "perspective": 0,
+    "fliplr": 0,
+    "flipud": 0,
+    "hsv_h": 0,
+    "hsv_s": 0,
+    "hsv_v": 0,
+    "amp": false,
+    "pretrained": false,
+    "deterministic": true,
+    "workers": 0,
+    "device": "cpu"
+  },
+  "loss": "Ultralytics YOLOv10 default detection loss; no custom loss supplied",
+  "loss_weights": {
+    "box": 7.5,
+    "cls": 0.5,
+    "dfl": 1.5
+  },
+  "augmentation": "disabled except for the separately generated test haze",
+  "confidence_threshold": 0.001,
+  "nms_iou_threshold": 0.7,
+  "dataset_manifest": "data/manifest.json",
+  "paired_statistical_test": "two-sided exact Wilcoxon signed-rank, unadjusted",
+  "confidence_interval": "two-sided 95% Student-t interval across seeds",
+  "scipy_version": "1.15.2"
+}
