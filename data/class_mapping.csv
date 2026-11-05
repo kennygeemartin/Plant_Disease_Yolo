@@ -1,0 +1,15 @@
+class_id,canonical_proxy_class,PlantVillage label,PlantDoc label
+0,Apple scab,Apple___Apple_scab,Apple Scab Leaf
+1,Apple healthy,Apple___healthy,Apple leaf
+2,Bell pepper bacterial spot,"Pepper,_bell___Bacterial_spot",Bell_pepper leaf spot
+3,Bell pepper healthy,"Pepper,_bell___healthy",Bell_pepper leaf
+4,Corn gray leaf spot,Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot,Corn Gray leaf spot
+5,Corn common rust,Corn_(maize)___Common_rust_,Corn rust leaf
+6,Grape black rot,Grape___Black_rot,grape leaf black rot
+7,Grape healthy,Grape___healthy,grape leaf
+8,Potato healthy,Potato___healthy,Potato leaf
+9,Potato early blight,Potato___Early_blight,Potato leaf early blight
+10,Potato late blight,Potato___Late_blight,Potato leaf late blight
+11,Tomato late blight,Tomato___Late_blight,Tomato leaf late blight
+12,Tomato Septoria leaf spot,Tomato___Septoria_leaf_spot,Tomato Septoria leaf spot
+13,Tomato healthy,Tomato___healthy,Tomato leaf
