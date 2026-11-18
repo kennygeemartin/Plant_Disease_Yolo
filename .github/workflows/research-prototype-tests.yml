@@ -1,0 +1,26 @@
+name: Research prototype tests
+on:
+  push:
+    paths:
+      - 'app/**'
+      - 'tests/test_gateway.py'
+      - 'requirements-prototype*.txt'
+      - '.github/workflows/research-prototype-tests.yml'
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'tests/test_gateway.py'
+      - 'requirements-prototype*.txt'
+      - '.github/workflows/research-prototype-tests.yml'
+jobs:
+  api-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install research prototype dependencies
+        run: pip install -r requirements-prototype-test.txt
+      - name: Mocked integration tests (not model validation)
+        run: python -m pytest -q tests/test_gateway.py
